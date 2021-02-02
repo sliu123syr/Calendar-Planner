@@ -1,4 +1,5 @@
 import pygame
+from datetime import datetime
 
 class Months:
     def __init__(self, monthname, monthnumber, numdays):
@@ -99,15 +100,66 @@ def main():
 ##-------------------------------------------------------------------------------
 def mainscreen(mainwindow):
     pygame.init()
+    current_time = datetime.now()
+    thismonth = current_time.month
+    thisday = current_time.day
 
-    addreminder = Button((255, 255, 255,), 400, 250, 400, 50, 50, 'Add Reminder')
-    viewcalendar = Button((255, 255, 255,), 400, 350, 400, 50, 50, 'View Calendar')
+    currentdatefont = pygame.font.SysFont('cambria', 20)
+    currentdatetextfont = pygame.font.SysFont('cambria', 50)
+    numremindersfont = pygame.font.SysFont('cambria', 100)
+    currentdate = currentdatefont.render("Today's Date:", 1, (0, 0, 0))
+    
+    datetext = YEAR2021[thismonth - 1].monthname + " " + str(thisday)
+    currentdatetext = currentdatetextfont.render(datetext, 1, (0, 0, 0))
+    text1 = "Reminders this month: " + str(len(YEAR2021[thismonth - 1].reminders))
+    text2 = "Reminders today: " + str(len(YEAR2021[thismonth - 1].listofdays[thisday - 1].reminders))
+    monthreminderstext = currentdatefont.render(text1, 1, (0, 0, 0))
+    dayreminderstext = currentdatefont.render(text2, 1, (0, 0, 0))
+    viewcurrentmonth = Button((255, 255, 255,), 75, 230, 400, 50, 40, 'View Current Month')
+    viewcurrentday = Button((255, 255, 255,), 75, 330, 400, 50, 40, 'View Current Day')
+    nostatusnum = 0
+    completednum = 0
+    incompletenum = 0
+    
+    for i in reminderlist:
+        if i.status == 'No Status':
+            nostatusnum = nostatusnum + 1
+        elif i.status == 'Completed':
+            completednum = completednum + 1
+        elif i.status == 'Incomplete':
+            incompletenum = incompletenum + 1
+    numreminderstext1 = currentdatefont.render('No Status:', 1, (0, 0, 0))
+    numreminderstext2 = currentdatefont.render('Completed:', 1, (0, 0, 0))
+    numreminderstext3 = currentdatefont.render('Incomplete:', 1, (0, 0, 0))
+    nostatustext = numremindersfont.render(str(nostatusnum), 1, (0, 0, 0))
+    completedtext = numremindersfont.render(str(completednum), 1, (0, 0, 0))
+    incompletetext = numremindersfont.render(str(incompletenum), 1, (0, 0, 0))
+    
+    addreminder = Button((255, 255, 255,), 750, 550, 350, 50, 50, 'Add Reminder')
+    viewcalendar = Button((255, 255, 255,), 750, 650, 350, 50, 50, 'View Calendar')
 
     running = True
     while running:
         mainwindow.fill((255, 255, 255))
+        mainwindow.blit(currentdate, (75, 75))
+        mainwindow.blit(currentdatetext, (75, 100))
+        mainwindow.blit(monthreminderstext, (75, 200))
+        mainwindow.blit(dayreminderstext, (75, 300))
+        viewcurrentmonth.draw(mainwindow, (0, 0, 0))
+        viewcurrentday.draw(mainwindow, (0, 0, 0))
+
+        drawminimonth(mainwindow, thismonth - 1, thisday - 1)
+
+        mainwindow.blit(numreminderstext1, (75, 550))
+        mainwindow.blit(numreminderstext2, (275, 550))
+        mainwindow.blit(numreminderstext3, (475, 550))
+        mainwindow.blit(nostatustext, (75, 575))
+        mainwindow.blit(completedtext, (275, 575))
+        mainwindow.blit(incompletetext, (475, 575))
+
         addreminder.draw(mainwindow, (0, 0, 0))
         viewcalendar.draw(mainwindow, (0, 0, 0))
+        
         pygame.display.update()
 
         for event in pygame.event.get():
@@ -119,6 +171,13 @@ def mainscreen(mainwindow):
                 pygame.quit()
 
             if event.type == pygame.MOUSEBUTTONDOWN:
+                if viewcurrentmonth.isOver(pos):
+                    running = False
+                    monthscreen(thismonth - 1, mainwindow)
+                if viewcurrentday.isOver(pos):
+                    running = False
+                    dayscreen(thismonth - 1, thisday - 1, mainwindow, '')
+                    
                 if addreminder.isOver(pos):
                     running = False
                     addreminderscreen(mainwindow)
@@ -127,6 +186,15 @@ def mainscreen(mainwindow):
                     viewcalendarscreen(mainwindow)
 
             if event.type == pygame.MOUSEMOTION:
+                if viewcurrentmonth.isOver(pos):
+                    viewcurrentmonth.color = (255, 0, 0)
+                else:
+                    viewcurrentmonth.color = (255, 255, 255)
+                if viewcurrentday.isOver(pos):
+                    viewcurrentday.color = (255, 0, 0)
+                else:
+                    viewcurrentday.color = (255, 255, 255)
+
                 if addreminder.isOver(pos):
                     addreminder.color = (255, 0, 0)
                 else:
@@ -135,6 +203,54 @@ def mainscreen(mainwindow):
                     viewcalendar.color = (255, 0, 0)
                 else:
                     viewcalendar.color = (255, 255, 255)
+                    
+##-------------------------------------------------------------------------------
+def drawminimonth(mainwindow, monthindex, dayindex):
+    pygame.init()
+    
+    dayfont = pygame.font.SysFont('cambria', 30)
+    reminderfont = pygame.font.SysFont('cambria', 20)
+    monthfont = pygame.font.SysFont('cambria', 50)
+    weeks = [[], [], [], [], [], []]
+    currentweek = 0
+    for i in YEAR2021[monthindex].listofdays:
+        weeks[currentweek].append(i)
+        if i.dayofweek == 6:
+            currentweek = currentweek + 1
+        else:
+            currentweek = currentweek
+
+    daybuttonlist = []
+    daytextlist = []
+    reminderstextlist = []
+    for i in range(6):
+        for j in weeks[i]:
+            daybutton = Button((255, 255, 255), j.dayofweek*90+500, i*70+100, 75, 55, 0)
+            daybuttonlist.append(daybutton)
+    for i in range(len(daybuttonlist)):
+        daytext = dayfont.render(str(i + 1), 1, (0, 0, 0))
+        daytextlist.append(daytext)
+        if i == dayindex:
+            daybuttonlist[i].color = (255, 0, 0)
+        if len(YEAR2021[monthindex].listofdays[i].reminders) != 0:
+            text = str(len(YEAR2021[monthindex].listofdays[i].reminders))
+        else:
+            text = ''
+        remindertext = reminderfont.render(text, 1, (0, 0, 0))
+        reminderstextlist.append(remindertext)
+        
+    
+    for i in range(len(daybuttonlist)):
+        daybuttonlist[i].draw(mainwindow, (0, 0, 0))
+    index = 0
+    for i in range(6):
+        for j in weeks[i]:
+            mainwindow.blit(daytextlist[index], (j.dayofweek*90+500, i*70+100))
+            if len(j.reminders) < 10:
+                mainwindow.blit(reminderstextlist[index], (j.dayofweek*90+560, i*70+130))
+            else:
+                mainwindow.blit(reminderstextlist[index], (j.dayofweek*90+550, i*70+130))
+            index = index + 1
 
 ##-------------------------------------------------------------------------------
 def addreminderscreen(mainwindow):
@@ -403,9 +519,10 @@ def monthscreen(monthindex, mainwindow):
     daytextlist = []
     reminderstextlist = []
     reminderstextlist2 = []
+    weekbuttonlist = []
     for i in range(6):
         for j in weeks[i]:
-            daybutton = Button((255, 255, 255), j.dayofweek*150+75, i*100+150, 140, 90, 0)
+            daybutton = Button((255, 255, 255), j.dayofweek*145+75, i*100+150, 135, 90, 0)
             daybuttonlist.append(daybutton)
     for i in range(len(daybuttonlist)):
         daytext = dayfont.render(str(i + 1), 1, (0, 0, 0))
@@ -421,7 +538,13 @@ def monthscreen(monthindex, mainwindow):
         remindertext2 = reminderfont.render(text2, 1, (0, 0, 0))
         reminderstextlist.append(remindertext)
         reminderstextlist2.append(remindertext2)
+    for i in range(6):
+        if weeks[i] != []:
+            weekbutton = Button((255, 255, 255,), 1100, i*100+150, 80, 90, 30, '')
+            weekbuttonlist.append(weekbutton)
     monthtext = monthfont.render(YEAR2021[monthindex].monthname, 1, (0, 0, 0))
+    prevmonthbutton = Button((255, 255, 255), 800, 75, 100, 50, 30, 'Prev')
+    nextmonthbutton = Button((255, 255, 255), 900, 75, 100, 50, 30, 'Next')
     backbutton = Button((255, 255, 255,), 1075, 50, 75, 40, 30, 'Back')
 
     running = True
@@ -433,12 +556,18 @@ def monthscreen(monthindex, mainwindow):
         index = 0
         for i in range(6):
             for j in weeks[i]:
-                mainwindow.blit(daytextlist[index], (j.dayofweek*150+75, i*100+150))
-                mainwindow.blit(reminderstextlist[index], (j.dayofweek*150+80, i*100+190))
-                mainwindow.blit(reminderstextlist2[index], (j.dayofweek*150+80, i*100+200))
+                mainwindow.blit(daytextlist[index], (j.dayofweek*145+75, i*100+150))
+                mainwindow.blit(reminderstextlist[index], (j.dayofweek*145+80, i*100+190))
+                mainwindow.blit(reminderstextlist2[index], (j.dayofweek*145+80, i*100+200))
+                weekbuttonlist[i].draw(mainwindow, (0, 0, 0))
                 index = index + 1
         mainwindow.blit(monthtext, (75, 75))
 
+        if monthindex != 0:
+            prevmonthbutton.draw(mainwindow, (0, 0, 0))
+        if monthindex != 11:
+            nextmonthbutton.draw(mainwindow, (0, 0, 0))
+            
         backbutton.draw(mainwindow, (0, 0, 0))
 
         pygame.display.update()
@@ -452,6 +581,21 @@ def monthscreen(monthindex, mainwindow):
                 pygame.quit()
 
             if event.type == pygame.MOUSEMOTION:
+                if prevmonthbutton.isOver(pos):
+                    prevmonthbutton.color = (255, 0, 0)
+                else:
+                    prevmonthbutton.color = (255, 255, 255)
+                if nextmonthbutton.isOver(pos):
+                    nextmonthbutton.color = (255, 0, 0)
+                else:
+                    nextmonthbutton.color = (255, 255, 255)
+
+                for i in weekbuttonlist:
+                    if i.isOver(pos):
+                        i.color = (255, 0, 0)
+                    else:
+                        i.color = (255, 255, 255)
+
                 for i in daybuttonlist:
                     if i.isOver(pos):
                         i.color = (255, 0, 0)
@@ -465,14 +609,136 @@ def monthscreen(monthindex, mainwindow):
 
 
             if event.type == pygame.MOUSEBUTTONDOWN:
+                if monthindex != 0 and prevmonthbutton.isOver(pos):
+                    running = False
+                    monthscreen(monthindex - 1, mainwindow)
+                if monthindex != 11 and nextmonthbutton.isOver(pos):
+                    running = False
+                    monthscreen(monthindex + 1, mainwindow)
+                    
+                if backbutton.isOver(pos):
+                    running = False
+                    viewcalendarscreen(mainwindow)
+
+                for i in range(len(weekbuttonlist)):
+                    if weekbuttonlist[i].isOver(pos):
+                        dayintheweek = []
+                        for j in weeks[i]:
+                            dayintheweek.append(j)
+                        if len(dayintheweek) < 7 and i == 0 and monthindex != 0:
+                            prevmonth = YEAR2021[monthindex - 1]
+                            for i in range(7 - len(dayintheweek)):
+                                day = prevmonth.listofdays[prevmonth.numdays - 1 - i]
+                                dayintheweek.insert(0, day)
+                        if len(dayintheweek) < 7 and i != 0 and monthindex != 11:
+                            nextmonth = YEAR2021[monthindex + 1]
+                            for j in range(7 - len(dayintheweek)):
+                                day = nextmonth.listofdays[j]
+                                dayintheweek.append(day)
+                        running = False
+                        weekscreen(dayintheweek, mainwindow, monthindex, '')
+
                 for i in range(len(daybuttonlist)):
                     if daybuttonlist[i].isOver(pos):
                         running = False
                         dayscreen(monthindex, i, mainwindow, '')
 
+##-------------------------------------------------------------------------------
+def weekscreen(daysintheweek, mainwindow, prevmonthindex, curreminder):
+    pygame.init()
+
+    daytextfont = pygame.font.SysFont('cambria', 50)
+    monthtextfont = pygame.font.SysFont('cambria', 25)
+
+    daytextlist = []
+    daybuttonlist = []
+    firstmonth = YEAR2021[daysintheweek[0].month - 1].monthname
+    secondmonth = ''
+    for i in range(len(daysintheweek)):
+        daytext = daytextfont.render(str(daysintheweek[i].day), 1, (0, 0, 0))
+        daytextlist.append(daytext)
+        if YEAR2021[daysintheweek[i].month - 1].monthname != firstmonth:
+            secondmonth = YEAR2021[daysintheweek[i].month - 1].monthname
+        daybutton = Button((255, 255, 255,), i*145+71, 125, 145, 620, 12, '')
+        daybuttonlist.append(daybutton)
+
+    reminderbuttonlist = []
+    col = 0
+    row = 0
+    for i in daysintheweek:
+        count = 0
+        for j in i.reminders:
+            reminderbutton = Button((255, 255, 255,), col*145+75, row*50+200, 135, 40, 12, j.name)
+            if j.status == 'No Status':
+                reminderbutton.color = (128, 128, 128)
+            elif j.status == 'Completed':
+                reminderbutton.color = (0, 200, 0)
+            elif j.status == 'Incomplete':
+                reminderbutton.color = (255, 0, 0)
+            if count < 10:
+                reminderbuttonlist.append(reminderbutton)
+            else:
+                maxnumber = Button((255, 255, 255,), col*145+75, row*50+200, 135, 40, 12, str(len(i.reminders)-10) + " More")
+                reminderbuttonlist.append(maxnumber)
+                break
+            count = count + 1
+            row = row + 1
+        col = col + 1
+        row = 0
+
+    backbutton = Button((255, 255, 255,), 1075, 50, 75, 40, 30, 'Back')
+        
+    running = True
+    while running:
+        mainwindow.fill((255, 255, 255))
+
+        for i in daybuttonlist:
+            i.draw(mainwindow, (0, 0, 0))
+
+        firstmonthtext = monthtextfont.render(firstmonth, 1, (0, 0, 0))
+        if secondmonth != '':
+            secondmonthtext = monthtextfont.render(secondmonth, 1, (0, 0, 0))
+        for i in range(len(daytextlist)):
+            if i == 0:
+                mainwindow.blit(firstmonthtext, (i*145+75, 75))
+            if i != 0 and daysintheweek[i].day == 1:
+                mainwindow.blit(secondmonthtext, (i*145+75, 75))
+            mainwindow.blit(daytextlist[i], (i*145+75, 125))
+
+        for i in reminderbuttonlist:
+            i.draw(mainwindow, (0, 0, 0))
+
+        backbutton.draw(mainwindow, (0, 0, 0))
+
+        pygame.display.update()
+
+        for event in pygame.event.get():
+            pos = pygame.mouse.get_pos()
+            
+            if event.type == pygame.QUIT:
+                running = False
+                savetofile()
+                pygame.quit()
+
+            if event.type == pygame.MOUSEBUTTONDOWN:
                 if backbutton.isOver(pos):
                     running = False
-                    viewcalendarscreen(mainwindow)
+                    monthscreen(prevmonthindex, mainwindow)
+                for i in range(7):
+                    if daybuttonlist[i].isOver(pos):
+                        running = False
+                        dayscreen(daysintheweek[i].month - 1, daysintheweek[i].day - 1, mainwindow, '')
+
+            if event.type == pygame.MOUSEMOTION:
+                if backbutton.isOver(pos):
+                    backbutton.color = (255, 0, 0)
+                else:
+                    backbutton.color = (255, 255, 255)
+                for i in daybuttonlist:
+                    if i.isOver(pos):
+                        i.color = (255, 0, 0)
+                    else:
+                        i.color = (255, 255, 255)
 
 ##-------------------------------------------------------------------------------
 def dayscreen(monthindex, dayindex, mainwindow, curreminder):
@@ -502,6 +768,8 @@ def dayscreen(monthindex, dayindex, mainwindow, curreminder):
     statusbuttonlist.append(completebutton)
     statusbuttonlist.append(incompletebutton)
     removereminderbutton = Button((255, 255, 255,), 725, 700, 200, 50, 20, 'Remove Reminder')
+    prevdaybutton = Button((255, 255, 255), 800, 75, 100, 50, 30, 'Prev')
+    nextdaybutton = Button((255, 255, 255), 900, 75, 100, 50, 30, 'Next')
     backbutton = Button((255, 255, 255,), 1075, 50, 75, 40, 30, 'Back')
 
     running = True
@@ -530,6 +798,11 @@ def dayscreen(monthindex, dayindex, mainwindow, curreminder):
             if row == 7:
                 row = 0
                 col = col + 1
+
+        if monthindex != 0 or dayindex != 0:
+            prevdaybutton.draw(mainwindow, (0, 0, 0))
+        if monthindex != 11 or dayindex != 30:
+            nextdaybutton.draw(mainwindow, (0, 0, 0))
 
         if curreminder != '':
             curemindertext = remindertextfont.render(curreminder.name, 1, (0, 0, 0))
@@ -560,6 +833,15 @@ def dayscreen(monthindex, dayindex, mainwindow, curreminder):
                 pygame.quit()
 
             if event.type == pygame.MOUSEMOTION:
+                if prevdaybutton.isOver(pos):
+                    prevdaybutton.color = (255, 0, 0)
+                else:
+                    prevdaybutton.color = (255, 255, 255)
+                if nextdaybutton.isOver(pos):
+                    nextdaybutton.color = (255, 0, 0)
+                else:
+                    nextdaybutton.color = (255, 255, 255)
+
                 if backbutton.isOver(pos):
                     backbutton.color = (255, 0, 0)
                 else:
@@ -573,10 +855,27 @@ def dayscreen(monthindex, dayindex, mainwindow, curreminder):
                 if backbutton.isOver(pos):
                     running = False
                     monthscreen(monthindex, mainwindow)
+                    
+                if prevdaybutton.isOver(pos):
+                    if dayindex == 0 and monthindex != 0:
+                        running = False
+                        dayscreen(monthindex - 1, len(YEAR2021[monthindex - 1].listofdays) - 1, mainwindow, '')
+                    elif dayindex != 0:
+                        running = False
+                        dayscreen(monthindex, dayindex - 1, mainwindow, '')
+                if nextdaybutton.isOver(pos):
+                    if dayindex == len(YEAR2021[monthindex].listofdays) - 1 and monthindex != 11:
+                        running = False
+                        dayscreen(monthindex + 1, 0, mainwindow, '')
+                    elif dayindex != 30:
+                        running = False
+                        dayscreen(monthindex, dayindex + 1, mainwindow, '')
+
                 for i in range(len(reminderbuttonlist)):
                     if reminderbuttonlist[i].isOver(pos):
                         curreminder = YEAR2021[monthindex].listofdays[dayindex].reminders[i]
                         curreminderbutton = reminderbuttonlist[i]
+                        
                 if curreminder != '':
                     for i in statusbuttonlist:
                         if i.isOver(pos):
